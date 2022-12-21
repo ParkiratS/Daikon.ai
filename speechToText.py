@@ -1,16 +1,379 @@
 import speech_recognition as sr
 from pydub import AudioSegment
+import tensorflow as tf
+from tensorflow import keras
+import tensorflow.keras as keras
+import pandas as pd
+import numpy as np
+import string
+from tensorflow.keras.models import load_model
+import sounddevice as sd
+from scipy.io.wavfile import write
+import wavio as wv
 
-                                                       
-# sound = AudioSegment.from_wav("DecaProject\output.wav")
-# sound.export("output.wav", format="wav")
+fs = 44100  # Sample rate
+seconds = 7  # Duration of recording
 
-filename = "d:\Programming\Projects\DecaProject\\recording1.wav"
+uni_words = {'hello': 1,
+ 'and': 2,
+ 'welcome': 3,
+ 'to': 4,
+ 'our': 5,
+ 'restaurant': 6,
+ 'my': 7,
+ 'name': 8,
+ 'is': 9,
+ 'i': 10,
+ 'will': 11,
+ 'be': 12,
+ 'your': 13,
+ 'server': 14,
+ 'today': 15,
+ 'hi': 16,
+ 'there': 17,
+ 'may': 18,
+ 'take': 19,
+ 'coat': 20,
+ 'good': 21,
+ 'evening': 22,
+ 'thank': 23,
+ 'you': 24,
+ 'for': 25,
+ 'choosing': 26,
+ 'dine': 27,
+ 'with': 28,
+ 'us': 29,
+ 'can': 30,
+ 'start': 31,
+ 'off': 32,
+ 'something': 33,
+ 'drink': 34,
+ 'we': 35,
+ 'have': 36,
+ 'a': 37,
+ 'great': 38,
+ 'selection': 39,
+ 'of': 40,
+ 'wines': 41,
+ 'beers': 42,
+ 'cocktails': 43,
+ 'special': 44,
+ 'highly': 45,
+ 'recommend': 46,
+ 'giving': 47,
+ 'it': 48,
+ 'try': 49,
+ 'this': 50,
+ 'first': 51,
+ 'time': 52,
+ 'dining': 53,
+ 'let': 54,
+ 'me': 55,
+ 'know': 56,
+ 'if': 57,
+ 'any': 58,
+ 'questions': 59,
+ 'about': 60,
+ 'the': 61,
+ 'menu': 62,
+ 'get': 63,
+ 'anything': 64,
+ 'else': 65,
+ 'refill': 66,
+ 'on': 67,
+ 'perhaps': 68,
+ 'coming': 69,
+ 'hope': 70,
+ 'enjoy': 71,
+ 'meal': 72,
+ 'how': 73,
+ 'everything': 74,
+ 'so': 75,
+ 'far': 76,
+ 'condiments': 77,
+ 'or': 78,
+ 'extra': 79,
+ 'napkins': 80,
+ "i'm": 81,
+ 'sorry': 82,
+ 'hear': 83,
+ 'that': 84,
+ 'see': 85,
+ 'kitchen': 86,
+ 'fix': 87,
+ 'desserts': 88,
+ 'are': 89,
+ 'made': 90,
+ 'fresh': 91,
+ 'daily': 92,
+ 'interest': 93,
+ 'in': 94,
+ 'sweet': 95,
+ 'was': 96,
+ 'pleasure': 97,
+ 'serving': 98,
+ 'again': 99,
+ 'soon': 100,
+ 'wonderful': 101,
+ 'before': 102,
+ 'bring': 103,
+ 'out': 104,
+ 'apologize': 105,
+ 'delay': 106,
+ 'shortly': 107,
+ 'another': 108,
+ 'one': 109,
+ 'to-go': 110,
+ 'box': 111,
+ 'leftovers': 112,
+ 'patience': 113,
+ 'here': 114,
+ 'need': 115,
+ 'but': 116,
+ 'some': 117,
+ 'bread': 118,
+ 'rolls': 119,
+ 'go': 120,
+ 'look': 121,
+ 'forward': 122,
+ 'seeing': 123,
+ 'ground': 124,
+ 'pepper': 125,
+ 'grated': 126,
+ 'parmesan': 127,
+ 'cheese': 128,
+ 'no': 129,
+ 'longer': 130,
+ 'dessert': 131,
+ 'customer': 132,
+ 'favorite': 133,
+ 'coffee': 134,
+ 'tea': 135,
+ 'similar': 136,
+ 'dish': 137,
+ "i'll": 138,
+ 'waiter': 139,
+ 'specials': 140,
+ "it's": 141,
+ 'most': 142,
+ 'popular': 143,
+ 'dishes': 144,
+ 'order': 145,
+ 'tasting': 146,
+ 'food': 147,
+ 'check': 148,
+ 'back': 149,
+ "we're": 150,
+ 'glad': 151,
+ "you're": 152,
+ 'enjoying': 153,
+ 'kind': 154,
+ 'words': 155,
+ 'right': 156,
+ 'must-try': 157,
+ 'while': 158,
+ 'prepare': 159,
+ 'finish': 160,
+ 'enjoyed': 161,
+ 'among': 162,
+ 'regulars': 163,
+ 'positive': 164,
+ 'feedback': 165,
+ 'do': 166,
+ 'make': 167,
+ 'experience': 168,
+ 'even': 169,
+ 'better': 170,
+ 'being': 171,
+ 'loyal': 172,
+ 'freshest': 173,
+ 'ingredients': 174,
+ 'business': 175,
+ 'complete': 176,
+ 'appreciate': 177,
+ 'wait': 178,
+ 'love': 179,
+ 'care': 180,
+ 'valued': 181,
+ 'happy': 182,
+ 'support': 183,
+ 'finest': 184,
+ 'needs': 185,
+ 'as': 186,
+ 'go-to': 187,
+ 'snack': 188,
+ 'true': 189,
+ 'masterpiece': 190,
+ 'regular': 191,
+ 'at': 192,
+ 'status': 193,
+ 'thrilled': 194,
+ 'assist': 195,
+ 'help': 196,
+ 'specific': 197,
+ 'looking': 198,
+ 'serve': 199,
+ 'answer': 200,
+ 'what': 201,
+ 'day': 202,
+ 'opportunity': 203,
+ 'find': 204,
+ 'value': 205,
+ 'whatever': 206,
+ 'enjoyable': 207,
+ 'possible': 208,
+ 'chance': 209,
+ 'improve': 210,
+ 'visit': 211,
+ 'pleasant': 212,
+ 'does': 213,
+ 'fat': 214,
+ 'ass': 215,
+ 'want': 216,
+ 'hurry': 217,
+ 'up': 218,
+ "don't": 219,
+ 'dont': 220,
+ 'hate': 221,
+ 'job': 222,
+ 'tell': 223,
+ 'am': 224,
+ 'leave': 225,
+ 'big': 226,
+ 'tip': 227,
+ 'its': 228,
+ 'not': 229,
+ 'fault': 230,
+ 'messed': 231,
+ 'give': 232,
+ 'menus': 233,
+ "can't": 234,
+ 'just': 235,
+ 'pick': 236,
+ 'ok': 237,
+ 'please': 238,
+ 'stop': 239,
+ 'wasting': 240,
+ 'never': 241,
+ 'return': 242,
+ 'leave,': 243,
+ 'someone': 244,
+ 'come': 245,
+ 'replace': 246,
+ 'fine': 247,
+ 'slow': 248,
+ 'down': 249,
+ 'speaking': 250,
+ 'fast': 251,
+ 'loud': 252,
+ 'lower': 253,
+ 'tone': 254,
+ 'sir': 255,
+ 'line': 256,
+ 'behind': 257,
+ 'mess': 258,
+ 'think': 259,
+ 'deserve': 260,
+ 'more': 261,
+ 'why': 262,
+ 'cheap': 263,
+ 'afford': 264,
+ 'wil': 265,
+ 'read': 266,
+ 'asking': 267,
+ 'use': 268,
+ 'fucking': 269,
+ 'eyes': 270,
+ 'speak': 271,
+ 'eat': 272,
+ 'bitch': 273,
+ 'vegetarian': 274,
+ 'been': 275,
+ 'waiting': 276,
+ 'long': 277,
+ 'sure': 278,
+ 'tastes': 279,
+ 'like': 280,
+ 'shit': 281,
+ 'would': 282,
+ 'really': 283,
+ 'getting': 284,
+ 'dish,': 285,
+ 'horrible': 286,
+ 'nothing': 287,
+ 'resteraunt': 288,
+ 'thats': 289,
+ 'bit': 290,
+ 'much': 291,
+ 'owner,': 292,
+ 'an': 293,
+ 'employee': 294,
+ 'all': 295,
+ 'carryout': 296,
+ 'taking': 297,
+ 'pay': 298,
+ 'buffet': 299,
+ 'kids': 300,
+ 'only': 301,
+ 'ten': 302,
+ 'percent': 303,
+ 'anytime': 304,
+ 'going': 305,
+ 'patient': 306,
+ 'anyday': 307,
+ 'now': 308,
+ 'way': 309,
+ 'vegan': 310,
+ 'brought': 311,
+ 'enough': 312,
+ 'money': 313}
 
-r = sr.Recognizer()
-with sr.AudioFile(filename) as source:
-    # listen for the data (load audio to memory)
-    audio_data = r.record(source)
-    # recognize (convert from speech to text)
-    text = r.recognize_google(audio_data)
-    print(text)
+
+filename = "recording1.wav"
+
+def get_model():
+    model = load_model("deca.h5")
+    return model
+
+def phrase_encoder(text):
+  arr = []
+  for word in text:
+    if word in uni_words.keys():
+      arr.append(uni_words[word])
+    else:
+      arr.append(0)
+  return arr
+
+def analysis(my_model, phrase):
+    my_dict = {"Content":phrase}
+    my_data = pd.DataFrame(data = my_dict, index = [0])
+
+    predict_data = my_data["Content"]
+    predict_data = predict_data.apply(lambda review:review.split())
+    predict_data = predict_data.apply(phrase_encoder)
+    predict_data = keras.preprocessing.sequence.pad_sequences(predict_data, value=0, padding = 'post', maxlen = 8)
+    print(my_model.predict(predict_data))
+    if my_model.predict(predict_data)> 0.5:
+        print("This was a nice phrase")
+    else:
+        print("This was a mean phrase")
+
+def speechify():
+    r = sr.Recognizer()
+    with sr.AudioFile(filename) as source:
+        # listen for the data (load audio to memory)
+        audio_data = r.record(source)
+        # recognize (convert from speech to text)
+        text = r.recognize_google(audio_data)
+        print("You said" + text)
+    return text
+
+print("Started Listening")
+myrecording = sd.rec(int(seconds * fs), samplerate=fs, channels=2)
+sd.wait()  # Wait until recording is finished
+wv.write("recording1.wav", myrecording, fs, sampwidth=2)  # Save as WAV file 
+print("Done Listening")
+predictor = get_model()
+speech_to_words = speechify()
+analysis(predictor, speech_to_words)
+
