@@ -10,6 +10,9 @@ from tensorflow.keras.models import load_model
 import sounddevice as sd
 from scipy.io.wavfile import write
 import wavio as wv
+from csv import writer
+
+csv_list = []
 
 fs = 44100  # Sample rate
 seconds = 7  # Duration of recording
@@ -400,29 +403,36 @@ def analysis(my_model, phrase):
     predict_data = my_data["Content"]
     predict_data = predict_data.apply(lambda review:review.split())
     predict_data = predict_data.apply(phrase_encoder)
-    predict_data = keras.preprocessing.sequence.pad_sequences(predict_data, value=0, padding = 'post', maxlen = 12)
-    print(my_model.predict(predict_data))
-    if my_model.predict(predict_data) > 0.57:
+    predict_data = keras.preprocessing.sequence.pad_sequences(predict_data, value=0, padding = 'post', maxlen = 8)
+    prediction = my_model.predict(predict_data)
+    csv_list.append(prediction[0][0])
+    print(prediction)
+    if prediction < 0.55:
         print("This was a nice phrase")
+        csv_list.append('good')
     else:
         print("This was a mean phrase")
+        csv_list.append('bad')
 
 def speechify():
     r = sr.Recognizer()
     with sr.AudioFile(filename) as source:
-        # listen for the data (load audio to memory)
         audio_data = r.record(source)
-        # recognize (convert from speech to text)
         text = r.recognize_google(audio_data)
         print("You said: " + text)
+        csv_list.append(text)
     return text
 
 print("Started Listening")
 myrecording = sd.rec(int(seconds * fs), samplerate=fs, channels=2)
-sd.wait()  # Wait until recording is finished
-wv.write("recording1.wav", myrecording, fs, sampwidth=2)  # Save as WAV file 
+sd.wait()
+wv.write("recording1.wav", myrecording, fs, sampwidth=2)
 print("Done Listening")
 predictor = get_model()
 speech_to_words = speechify()
 analysis(predictor, speech_to_words)
 
+with open('data_collected.csv', 'a') as f_object:
+    writer_object = writer(f_object)
+    writer_object.writerow(csv_list)
+    f_object.close()
