@@ -402,7 +402,7 @@ def analysis(my_model, phrase):
     predict_data = predict_data.apply(phrase_encoder)
     predict_data = keras.preprocessing.sequence.pad_sequences(predict_data, value=0, padding = 'post', maxlen = 12)
     print(my_model.predict(predict_data))
-    if my_model.predict(predict_data) > 0.57:
+    if my_model.predict(predict_data) > 0.7:
         print("This was a nice phrase")
     else:
         print("This was a mean phrase")
