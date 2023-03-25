@@ -1,0 +1,9 @@
+speechrecognition
+pydub
+tensorflow
+pandas
+numpy
+sounddevice
+wavio
+tkinter
+scipy
