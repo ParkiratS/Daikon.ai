@@ -10,6 +10,7 @@ from tensorflow.keras.models import load_model
 import sounddevice as sd
 from scipy.io.wavfile import write
 import wavio as wv
+from tkinter import *
 
 fs = 44100  # Sample rate
 seconds = 7  # Duration of recording
@@ -380,9 +381,7 @@ uni_words = {'great': 1,
 
 filename = "recording1.wav"
 
-def get_model():
-    model = load_model("deca.h5")
-    return model
+
 
 def phrase_encoder(text):
   arr = []
@@ -393,19 +392,24 @@ def phrase_encoder(text):
       arr.append(0)
   return arr
 
+def get_model():
+    model = load_model("deca.h5")
+    return model
+
 def analysis(my_model, phrase):
     my_dict = {"Content":phrase}
     my_data = pd.DataFrame(data = my_dict, index = [0])
-
     predict_data = my_data["Content"]
     predict_data = predict_data.apply(lambda review:review.split())
     predict_data = predict_data.apply(phrase_encoder)
     predict_data = keras.preprocessing.sequence.pad_sequences(predict_data, value=0, padding = 'post', maxlen = 12)
     print(my_model.predict(predict_data))
-    if my_model.predict(predict_data) > 0.57:
+    if my_model.predict(predict_data) > 0.7:
         print("This was a nice phrase")
+        return "nice"
     else:
         print("This was a mean phrase")
+        return "mean"
 
 def speechify():
     r = sr.Recognizer()
@@ -424,5 +428,21 @@ wv.write("recording1.wav", myrecording, fs, sampwidth=2)  # Save as WAV file
 print("Done Listening")
 predictor = get_model()
 speech_to_words = speechify()
-analysis(predictor, speech_to_words)
+prediction = analysis(predictor, speech_to_words)
+speech_to_words = speech_to_words.capitalize()
+prediction = prediction.capitalize()
 
+if prediction == "Mean":
+   suggestions = "Speak in a more encouraging tone. Try avoid using the word \"terrible\" and \"failure\"."
+else:
+   suggestions = "Great use of an encouraging tone! Nice job using positive words."
+
+master = Tk()
+Label(master, text='You said:', font=("Arial", 25, "bold")).grid(row=0)
+Label(master, text= "\""+speech_to_words+"\"" + "\n", font=("Arial", 20), fg = "purple").grid(row=1)
+Label(master, text='This phrase:', font=("Arial", 25, "bold")).grid(row=2)
+Label(master, text= prediction + "\n", font=("Arial", 20), fg = "purple").grid(row=3)
+Label(master, text='Suggestions:', font=("Arial", 25, "bold")).grid(row=4)
+Label(master, text= suggestions, font=("Arial", 20), fg = "purple").grid(row=5)
+
+mainloop()
